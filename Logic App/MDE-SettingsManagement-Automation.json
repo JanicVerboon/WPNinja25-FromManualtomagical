@@ -1,0 +1,190 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "18439138133756415649"
+    }
+  },
+  "parameters": {
+    "playbookName": {
+      "type": "string",
+      "defaultValue": "Playbook-Name"
+    },
+    "MDEApiConnectionName": {
+      "type": "string",
+      "defaultValue": "api-mde-uami"
+    },
+    "resourceGroupLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "DeviceTag": {
+      "type": "string",
+      "defaultValue": "MDE-Management"
+    }
+  },
+  "variables": {
+    "subscriptionID": "[subscription().subscriptionId]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('playbookName')]",
+      "location": "[parameters('resourceGroupLocation')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "state": "Disabled",
+        "parameters": {
+          "$connections": {
+            "value": {
+              "[format('{0}', parameters('MDEApiConnectionName'))]": {
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('MDEApiConnectionName'))]",
+                "connectionName": "[parameters('MDEApiConnectionName')]",
+                "id": "[format('/subscriptions/{0}/providers/Microsoft.Web/locations/{1}/managedApis/Wdatp', variables('subscriptionID'), parameters('resourceGroupLocation'))]",
+                "connectionProperties": {
+                  "authentication": {
+                    "type": "ManagedServiceIdentity"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "interval": 1,
+                "frequency": "Week"
+              },
+              "evaluatedRecurrence": {
+                "interval": 1,
+                "frequency": "Week"
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Advanced_Hunting": {
+              "runAfter": {},
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "[format('@parameters(''$connections'')[''{0}''][''connectionId'']', parameters('MDEApiConnectionName'))]"
+                  }
+                },
+                "method": "post",
+                "body": {
+                  "Query": "DeviceInfo | where Timestamp> ago(7d) | summarize arg_max(Timestamp, *) by DeviceId | where OnboardingStatus == \"Onboarded\" | where DeviceName contains \"UPDATE NAMING CONVENTION\"| project DeviceId, DeviceName, OSPlatform, OSDistribution, DeviceManualTags"
+                },
+                "path": "/api/advancedqueries/run"
+              }
+            },
+            "Parse_JSON": {
+              "runAfter": {
+                "Advanced_Hunting": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@body('Advanced_Hunting')?['Results']",
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "DeviceId": {
+                        "type": "string"
+                      },
+                      "DeviceName": {
+                        "type": "string"
+                      },
+                      "OSPlatform": {
+                        "type": "string"
+                      },
+                      "OSDistribution": {
+                        "type": "string"
+                      },
+                      "DeviceManualTags": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "DeviceId",
+                      "DeviceName",
+                      "OSPlatform",
+                      "OSDistribution",
+                      "DeviceManualTags"
+                    ]
+                  }
+                }
+              }
+            },
+            "For_each": {
+              "foreach": "@body('Parse_JSON')",
+              "actions": {
+                "Condition": {
+                  "actions": {},
+                  "else": {
+                    "actions": {
+                      "Machines_-_Tag_machine": {
+                        "type": "ApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connection": {
+                              "name": "[format('@parameters(''$connections'')[''{0}''][''connectionId'']', parameters('MDEApiConnectionName'))]"
+                            }
+                          },
+                          "method": "post",
+                          "body": {
+                            "Value": "[parameters('DeviceTag')]",
+                            "Action": "Add"
+                          },
+                          "path": "/api/machines/@{encodeURIComponent(item()['DeviceId'])}/tags"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "contains": [
+                          "@item()['DeviceManualTags']",
+                          "[format('{0}', parameters('DeviceTag'))]"
+                        ]
+                      }
+                    ]
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach"
+            }
+          },
+          "outputs": {}
+        }
+      }
+    }
+  ]
+}
