@@ -15,7 +15,7 @@
     },
     "MDEApiConnectionName": {
       "type": "string",
-      "defaultValue": "api-mde-uami"
+      "defaultValue": "api-mde"
     },
     "resourceGroupLocation": {
       "type": "string",
