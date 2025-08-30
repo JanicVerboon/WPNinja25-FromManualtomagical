@@ -15,7 +15,7 @@ This Bicep template deploys an Azure Logic App (playbook) that connects to Micro
 
 # Deployment
 ## Deploy MDE API-Connection
-![Deploy MDE API-Connection](/WPNinja25-FromManualtomagical/Media/MDE-APIConnection-Deployment.gif)
+![Deploy MDE API-Connection](Media/MDE-APIConnection-Deployment.gif)
 
 # Deploy Logic App
 
@@ -26,6 +26,6 @@ This Bicep template deploys an Azure Logic App (playbook) that connects to Micro
 - We do not make any guarantees or warranties, either expressed or implied. Please evaluate and test any implementation in your own environment before relying on it in production.
 
 
-![Deploy Logic App](/WPNinja25-FromManualtomagical/Media/MDE-SettingsManagement-Automation-Deployment.gif)
+![Deploy Logic App](Media/MDE-SettingsManagement-Automation-Deployment.gif)
 
 # Assign Permission to System-Assigned Managed Identity of the Logic App
