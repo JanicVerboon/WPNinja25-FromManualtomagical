@@ -15,5 +15,17 @@ This Bicep template deploys an Azure Logic App (playbook) that connects to Micro
 
 # Deployment
 ## Deploy MDE API-Connection
-Go to the Azure Portal (https://portal.azure.com) and open "Deploy a custom template" or use the direct link https://portal.azure.com/#create/Microsoft.Template
+![Deploy MDE API-Connection](/WPNinja25-FromManualtomagical/Media/MDE-APIConnection-Deployment.gif)
 
+# Deploy Logic App
+
+**Important**:
+- The Logic app needs to be deployed in the same resource group as the API-Connection.
+- Adapt the Advanced Hunting to your needs (naming convention etc.)
+- After you enable the Logic App it will run and apply the tag to the device in the output. 
+- We do not make any guarantees or warranties, either expressed or implied. Please evaluate and test any implementation in your own environment before relying on it in production.
+
+
+![Deploy Logic App](/WPNinja25-FromManualtomagical/Media/MDE-SettingsManagement-Automation-Deployment.gif)
+
+# Assign Permission to System-Assigned Managed Identity of the Logic App
