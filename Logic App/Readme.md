@@ -29,3 +29,4 @@ This Bicep template deploys an Azure Logic App (playbook) that connects to Micro
 ![Deploy Logic App](/Media/MDE-SettingsManagement-Automation-Deployment.gif)
 
 # Assign Permission to System-Assigned Managed Identity of the Logic App
+Update the script with the Object ID of the System-Assigned Managed Identity of the Logic App and run the script [LogicApp-Permission.ps1](/Logic%20App/LogicApp-Permission.ps1)
