@@ -34,7 +34,7 @@ Additionally the Managed Identity must be allowed to send mails.
 This can be achieved using the following code:
 
 ```powershell
-#Requires -Module ExchangeOnline
+#Requires -Module Exchange PowerShell
 Connect-ExchangeOnline
 #Replace the AppId & Object ID with the values of your Managed Identity, we also recommend to use the same DisplayName as your ManagedIdentity
 New-ServicePrincipal -AppId <AppId> -ObjectId <ObjectId> -DisplayName "%DisplayName%"
