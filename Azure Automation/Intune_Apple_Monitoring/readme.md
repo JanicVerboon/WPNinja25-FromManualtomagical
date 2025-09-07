@@ -1,4 +1,4 @@
-#Introduction
+# Introduction
 
 This guide describes how to implement the Apple Monitoring script offered by baseVISION as part of the Intune for iOS and Android service. 
 The script should be implemented using an Azure Automation account. Authentication should be performed using a system assigned managed Identity. 
@@ -34,7 +34,7 @@ Additionally the Managed Identity must be allowed to send mails.
 This can be achieved using the following code:
 
 ```powershell
-# This script lists all running processes
+#Requires -Module Exchange PowerShell
 Connect-ExchangeOnline
 #Replace the AppId & Object ID with the values of your Managed Identity, we also recommend to use the same DisplayName as your ManagedIdentity
 New-ServicePrincipal -AppId <AppId> -ObjectId <ObjectId> -DisplayName "%DisplayName%"
@@ -44,9 +44,9 @@ New-ManagementRoleAssignment -App <AppID> -Role "Application Mail.Send" -Recipie
 ```
 > More information about this topic can be found in [Jan Bakkers excellent blog post](https://janbakker.tech/a-love-story-about-role-based-access-control-for-applications-in-exchange-online-managed-identities-entra-id-admin-units-and-graph-api/)
 
-#Paramters
+# Paramters
 
-The script supports the following paramters:$
+The script supports the following paramters:
 
 | Parameter | Mandatory | Description | 
 | ----- | ----- | ---- |
