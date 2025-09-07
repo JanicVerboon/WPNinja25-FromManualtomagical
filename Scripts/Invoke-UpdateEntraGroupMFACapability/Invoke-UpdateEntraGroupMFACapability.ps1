@@ -1,50 +1,49 @@
-# Invoke-UpdateEntraGroupMFACapability.ps1
-
-## Description
-
-This PowerShell script automates the management of Entra ID (Azure AD) group memberships based on users' Multi-Factor Authentication (MFA) capability status. It connects to Microsoft Graph and retrieves user registration details from the Entra ID MFA report. The script then ensures that two specified Entra ID groups are kept up to date:
-
-- One group contains all users who are MFA capable.
-- The other group contains all users who are not MFA capable.
-
-The script adds or removes users from these groups as needed, so that group membership always reflects the current MFA capability status of users. This is useful for scenarios such as applying Conditional Access policies based on MFA capability.
-
-The script requires the Microsoft Graph PowerShell modules and appropriate permissions (such as `AuditLog.Read.All` and `Group.ReadWrite.All`). It is intended for administrators who want to automate group management for security and compliance purposes.
-
 #Requires -Module Microsoft.Graph.Authentication,Microsoft.Graph.Reports,Microsoft.Graph.Users,Microsoft.Graph.Groups
+<#
+.SYNOPSIS
+    Synchronizes Entra ID group memberships based on the User registration details report.
 
-#Permissions
-# AuditLog.Read.All = To read the Authentication Report
-# Group.ReadWrite.All = Read Group Members / Add & remove group members
+.DESCRIPTION
+    This script connects to Microsoft Graph and retrieves user registration details from the Entra ID MFA report.
+    It ensures that two specified Entra ID groups are kept up to date:
+      - One group contains all users who are MFA capable.
+      - The other group contains all users who are not MFA capable.
+    Users are added or removed from these groups as needed, so that group membership always reflects the current MFA capability status.
+    This is useful for scenarios such as applying Conditional Access policies based on MFA capability.
+
+    The script requires the Microsoft Graph PowerShell modules and appropriate permissions:
+      - AuditLog.Read.All (to read the Authentication Report)
+      - Group.ReadWrite.All (to read and modify group members)
+
+    Author: L. Ambrozzo
+    Last updated: 07.09.2025 / V1.0
+#>
 
 function Add-GroupMember {
     <#
     .SYNOPSIS
-        Add Member to Entra Group
+        Adds a user to an Entra ID group.
 
     .DESCRIPTION
-        Add a specific User to a specific Entra Group.
+        Adds a specific user to a specific Entra ID group using Microsoft Graph.
 
     .PARAMETER usergroup
-        Entra Group where users should be added
+        The Entra ID group ObjectId to which the user should be added.
 
     .PARAMETER userid
-        User which should be added
+        The ObjectId of the user to add.
 
     .EXAMPLE
         Add-GroupMember -usergroup 682c860e-86ad-472a-adaa-467f1fb06842 -userid 78006026-e438-4989-af40-bbf479d2465d
-
     #>
 
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
-        #DeviceGroup
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
         $usergroup,
 
-        #DeviceObjectId
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
@@ -60,32 +59,29 @@ function Add-GroupMember {
 
 function Remove-GroupMember {
     <#
-    <#
     .SYNOPSIS
-        Remove Member from Entra Group
+        Removes a user from an Entra ID group.
 
     .DESCRIPTION
-        Remove a specific User to a specific Entra Group.
+        Removes a specific user from a specific Entra ID group using Microsoft Graph.
 
     .PARAMETER usergroup
-        Entra Group where users should be removed
+        The Entra ID group ObjectId from which the user should be removed.
 
     .PARAMETER userid
-        User which should be removed
+        The ObjectId of the user to remove.
 
     .EXAMPLE
-        Remve-GroupMember -usergroup 682c860e-86ad-472a-adaa-467f1fb06842 -userid 78006026-e438-4989-af40-bbf479d2465d
+        Remove-GroupMember -usergroup 682c860e-86ad-472a-adaa-467f1fb06842 -userid 78006026-e438-4989-af40-bbf479d2465d
     #>
 
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
-        #DeviceGroup
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
         $usergroup,
 
-        #DeviceObjectId
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
@@ -102,30 +98,30 @@ function Remove-GroupMember {
 function Invoke-UpdateEntraGroupMFACapability {
     <#
     .SYNOPSIS
-        Add MFA Capable or not capable users to Entra ID groups
+        Updates Entra ID groups based on users' MFA capability.
 
     .DESCRIPTION
-        Add all MFA capable users to a specific Entra Group and all not capable users to another Entra Group. This two groups can then can be used for example Conditional Access Policies. 
-        Data is based on the Entra ID MFA Report: https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/UserRegistrationDetails
+        Adds all MFA capable users to one Entra ID group and all not MFA capable users to another.
+        Ensures group membership always matches the current MFA capability status from the Entra ID MFA report.
 
     .PARAMETER GroupIdMFACapable
-        $GroupIdMFACapable = Entra Group which should contain all MFA Capable Group
-    
+        The ObjectId of the group for MFA capable users.
+
     .PARAMETER GroupIdMFANotCapable
-        $GroupIdMFANotCapable = Entra Group which should contain all not MFA Capable Group
+        The ObjectId of the group for users not MFA capable.
 
     .EXAMPLE
-        Invoke-UpdateEntraIDGroupMFACapability -GroupIdMFACapable "a8950f68-2243-450a-a883-a3afee393fb4" -GroupIdMFANotCapable "682c860e-86ad-472a-adaa-467f1fb06842"
+        Invoke-UpdateEntraGroupMFACapability -GroupIdMFACapable "a8950f68-2243-450a-a883-a3afee393fb4" -GroupIdMFANotCapable "682c860e-86ad-472a-adaa-467f1fb06842"
     #>
 
     [CmdletBinding()]
     Param
     (
-        #Group
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
         $GroupIdMFACapable,
+
         [Parameter(Mandatory = $true)]
         [string]
         [ValidateNotNullOrEmpty()]
@@ -141,41 +137,33 @@ function Invoke-UpdateEntraGroupMFACapability {
         } 
     }
     Process {
-
-
-        # Getting all Users which are not MFA Capable based on the Entra ID MFA Report
-        # https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/UserRegistrationDetails
+        # Retrieve all users who are not MFA capable
         [System.Collections.Generic.HashSet[string]] $NotMFACapableUsers = [System.Collections.Generic.HashSet[string]]::new()
         Get-MgReportAuthenticationMethodUserRegistrationDetail -All | Where-Object { $_.IsMfaCapable -eq $false } | ForEach-Object { $null = $NotMFACapableUsers.Add($_.Id) }
 
-        # Getting all Users which are  MFA Capable based on the Entra ID MFA Report
-        # https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/UserRegistrationDetails
+        # Retrieve all users who are MFA capable
         [System.Collections.Generic.HashSet[string]] $MFACapableUsers = [System.Collections.Generic.HashSet[string]]::new()
         Get-MgReportAuthenticationMethodUserRegistrationDetail -All | Where-Object { $_.IsMfaCapable -eq $true } | ForEach-Object { $null = $MFACapableUsers.Add($_.Id) }
 
-            
         try {
-            # Get all Group Members from the MFA Capable Group
+            # Get all current members of the MFA Capable group
             [System.Collections.Generic.HashSet[string]] $EntraGroupMFACapable = [System.Collections.Generic.HashSet[string]]::new()
             Get-MgGroupMember -GroupId $GroupIdMFACapable -All -ErrorAction Stop | ForEach-Object { $null = $EntraGroupMFACapable.Add($_.Id) }
         }
         catch {
-            Throw "Couldn't obtain the members of the groups $($GroupIdMFACapable)"
-            
+            Throw "Couldn't obtain the members of the group $($GroupIdMFACapable)"
         }
             
         try {
-            # Get all Group Members from the Not MFA Capable Group
+            # Get all current members of the Not MFA Capable group
             [System.Collections.Generic.HashSet[string]] $EntraGroupMFANotCapable = [System.Collections.Generic.HashSet[string]]::new()
             Get-MgGroupMember -GroupId $GroupIdMFANotCapable -All -ErrorAction Stop | ForEach-Object { $null = $EntraGroupMFANotCapable.Add($_.Id) }
         }
         catch {
-            
-            Throw "Couldn't obtain the members of the groups $($EntraGroupMFANotCapable)"
+            Throw "Couldn't obtain the members of the group $($GroupIdMFANotCapable)"
         }
 
-        # Important: to allow null-and failsave comparison we work with hashsets and explicit type conversion to determine devices that need to be added or removed
-        # https://learn.microsoft.com/en-US/dotnet/api/system.collections.generic.hashset-1?view=net-7.0
+        # Calculate which users need to be added or removed from each group
         [System.Collections.Generic.HashSet[string]] $membersToAddNotCapableGroup = [System.Collections.Generic.HashSet[string]]::new($NotMFACapableUsers)
         $membersToAddNotCapableGroup.ExceptWith($EntraGroupMFANotCapable)
 
@@ -189,34 +177,31 @@ function Invoke-UpdateEntraGroupMFACapability {
         $membersToRemoveNotCapableGroup.IntersectWith($MFACapableUsers)
             
         Write-Warning "There are $($membersToAddNotCapableGroup.Count) users to add to the Not Capable Group and $($membersToAddMFACapableGroup.Count) users to add to the Capable Group."
-        Write-Warning "There are $($membersToRemoveCapableGroup.Count) users to remove from the Capable Group and $($membersToRemoveNotCapableGroup.Count) users to remove from the not capable Group."
+        Write-Warning "There are $($membersToRemoveCapableGroup.Count) users to remove from the Capable Group and $($membersToRemoveNotCapableGroup.Count) users to remove from the Not Capable Group."
 
-        # Add users to to not capable group
+        # Add users to the Not MFA Capable group
         $membersToAddNotCapableGroup | ForEach-Object {
             try {
-                Write-Verbose "Adding user $($_) to group $($devicegroup.DisplayName) $($GroupIdMFANotCapable)"
                 Add-GroupMember -usergroup $GroupIdMFANotCapable -userid $_
             }
             catch {
-                Write-Warning "Couldn't add user $($_) to group $($devicegroup.DisplayName) $($GroupIdMFANotCapable)"
+                Write-Warning "Couldn't add user $($_) to group $($GroupIdMFANotCapable)"
             }
         }
 
-        # Add users to to capable group
+        # Add users to the MFA Capable group
         $membersToAddMFACapableGroup | ForEach-Object {
             try {
-                Write-Verbose "Adding user $($_) to group $($devicegroup.DisplayName) $($GroupIdMFACapable)"
                 Add-GroupMember -usergroup $GroupIdMFACapable -userid $_
             }
             catch {
-                Write-Warning "Couldn't add user $($_) to group $($devicegroup.DisplayName) $($GroupIdMFACapable)"
+                Write-Warning "Couldn't add user $($_) to group $($GroupIdMFACapable)"
             }
         }
         
-        # Remove users from capable group
+        # Remove users from the MFA Capable group
         $membersToRemoveCapableGroup | ForEach-Object {
             try {
-                Write-Verbose "Removing user $($_) from group $($GroupIdMFACapable)"
                 Remove-GroupMember -usergroup $GroupIdMFACapable -userid $_
             }
             catch {
@@ -224,10 +209,9 @@ function Invoke-UpdateEntraGroupMFACapability {
             }
         }
 
-        # Remove users from not capable group
+        # Remove users from the Not MFA Capable group
         $membersToRemoveNotCapableGroup | ForEach-Object {
             try {
-                Write-Verbose "Removing user $($_) from group $($GroupIdMFANotCapable)"
                 Remove-GroupMember -usergroup $GroupIdMFANotCapable -userid $_
             }
             catch {
@@ -237,4 +221,5 @@ function Invoke-UpdateEntraGroupMFACapability {
     }
 }
 
+# Replace the group IDs with your actual group Object IDs
 Invoke-UpdateEntraGroupMFACapability -GroupIdMFACapable 'OBJECT ID MFA CAPABLE GROUP' -GroupIdMFANotCapable 'OBJECT ID MFA NOT CAPABLE GROUP'
