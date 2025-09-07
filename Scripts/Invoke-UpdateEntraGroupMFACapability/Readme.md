@@ -20,7 +20,7 @@ Ensure the following Microsoft Graph modules are installed:
 
 ## Required Permissions
 
-The script requires the following Microsoft Graph API permissions (see [Invoke-UpdateEntraGroupMFACapability-GraphPermissions.ps1](/Script/Invoke-UpdateEntraGroupMFACapability-GraphPermissions.ps1) to assign permissions):
+The script requires the following Microsoft Graph API permissions (see [Invoke-UpdateEntraGroupMFACapability-GraphPermissions.ps1](https://github.com/JanicVerboon/WPNinja25-FromManualtomagical/blob/main/Scripts/Invoke-UpdateEntraGroupMFACapability/Invoke-UpdateEntraGroupMFACapability-GraphPermissions.ps1) to assign permissions):
 - `AuditLog.Read.All` – To read the Authentication Report
 - `Group.ReadWrite.All` – To read and modify group members
 ---
