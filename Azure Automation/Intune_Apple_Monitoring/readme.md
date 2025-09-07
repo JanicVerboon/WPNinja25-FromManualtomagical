@@ -44,7 +44,7 @@ New-ManagementRoleAssignment -App <AppID> -Role "Application Mail.Send" -Recipie
 ```
 > More information about this topic can be found in [Jan Bakkers excellent blog post](https://janbakker.tech/a-love-story-about-role-based-access-control-for-applications-in-exchange-online-managed-identities-entra-id-admin-units-and-graph-api/)
 
-#Paramters
+# Paramters
 
 The script supports the following paramters:$
 
