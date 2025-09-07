@@ -46,7 +46,7 @@ New-ManagementRoleAssignment -App <AppID> -Role "Application Mail.Send" -Recipie
 
 # Paramters
 
-The script supports the following paramters:$
+The script supports the following paramters:
 
 | Parameter | Mandatory | Description | 
 | ----- | ----- | ---- |
