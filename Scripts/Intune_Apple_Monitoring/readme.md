@@ -1,6 +1,6 @@
 # Introduction
 
-This guide describes how to implement the Apple Monitoring script offered by baseVISION as part of the Intune for iOS and Android service. 
+This guide describes how to implement the Apple Monitoring script.
 The script should be implemented using an Azure Automation account. Authentication should be performed using a system assigned managed Identity. 
 
 # Features
