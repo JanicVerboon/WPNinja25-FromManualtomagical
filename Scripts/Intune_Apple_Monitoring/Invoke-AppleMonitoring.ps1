@@ -45,12 +45,14 @@ function Invoke-AppleMonitoring {
             }
         }
         $EmployeeHtmlBody = "<p>Dear Support,</p><p>This is an Alert to notify you that the following Apple Tokens are about to expire:</p>"
+        $hasAlerts = $false
     }
 
     process {
         $APNS = Get-MgDeviceManagementApplePushNotificationCertificate -Property Id, AppleIdentifier, ExpirationDateTime
         $apnsexpirationcheck = New-TimeSpan -Start $today -End $APNS.ExpirationDateTime
         If ($apnsexpirationcheck.days -lt $treshold) {
+            $hasAlerts = $true
             $EmployeeHtmlBody += "<h4>APNS Certificate</h4><p>The Apns Certificate will expire in $($apnsexpirationcheck.days) Days. Make sure to renew it using the Apple ID: $($APNS.AppleIdentifier)</p>"
         }
 
@@ -59,6 +61,7 @@ function Invoke-AppleMonitoring {
             $ADETokensatRisk = $ADETokens | Where-Object { ($_.TokenExpirationDateTime -lt $today.AddDays($treshold)) -or ($_.LastSyncErrorCode -eq 3) }
 
             If ($ADETokensatRisk) {
+                $hasAlerts = $true
                 $EmployeeHtmlBody += "<h4>ADE Tokens at Risk</h4><p>The following ADE Tokens are at risk, check if they haven't expired yet or if the new T&C must be accepted within Apple Business Manager</p><table border='1'><tr><th>Token Name</th><th>Token Expiration</th><th>Last Successful Sync</th></tr>"
                 $ADETokensatRisk | ForEach-Object {
                     $EmployeeHtmlBody += "<tr><td>$($_.TokenName)</td><td>$($_.TokenExpirationDateTime)</td><td>$($_.LastSuccessfulSyncDateTime)</td></tr>"
@@ -72,6 +75,7 @@ function Invoke-AppleMonitoring {
             $VPPTokensAtrisk = $VPPTokens | Where-Object { $_.expirationDateTime -lt $today.AddDays($treshold) }
 
             If ($VPPTokensAtrisk) {
+                $hasAlerts = $true
                 $EmployeeHtmlBody += "<h4>VPP Tokens at Risk</h4><p>Please ensure that the following VPP Tokens get renewed before they expire!.</p><table border='1'><tr><th>Token Name</th><th>Expiration Time</th></tr>"
                 $VPPTokensAtrisk | ForEach-Object {
                     $EmployeeHtmlBody += "<tr><td>$($_.DisplayName)</td><td>$($_.expirationDateTime)</td></tr>"
@@ -94,6 +98,7 @@ function Invoke-AppleMonitoring {
                 $VPPAppsatRisk = $VPPAppInfos | Where-Object { $_.Freelicenses -LT $VPPLicenseTreshold }
 
                 If ($VPPAppsatRisk) {
+                    $hasAlerts = $true
                     $EmployeeHtmlBody += "<h4>VPP Licenses</h4><p>The following VPP apps are about to run out of licenses, sign in to Apple Business Manager and acquire more licenses</p><table border='1'><tr><th>VPP App Name</th><th>Associated Token</th><th>Free Licenses</th></tr>"
                     $VPPAppsatRisk | ForEach-Object {
                         $EmployeeHtmlBody += "<tr><td>$($_.DisplayName)</td><td>$($_.AssociatedTokenName)</td><td>$($_.Freelicenses)</td></tr>"
@@ -115,6 +120,7 @@ function Invoke-AppleMonitoring {
             $LOBAppsatRisk = $LOBAPPInfos | Where-Object { $_.expirationDateTime -lt $today.AddDays($treshold) }
 
             If ($LOBAppsatRisk) {
+                $hasAlerts = $true
                 $EmployeeHtmlBody += "<h4>Apple LOB Apps at Risk</h4><p>Please ensure that the provisioning profile of the following LOB Apps get renewed.</p><table border='1'><tr><th>LOB App Name</th><th>Publisher</th><th>Expiration</th></tr>"
                 $LOBAppsatRisk | ForEach-Object {
                     $EmployeeHtmlBody += "<tr><td>$($_.DisplayName)</td><td>$($_.Publisher)</td><td>$($_.ExpirationDateTime)</td></tr>"
@@ -123,22 +129,24 @@ function Invoke-AppleMonitoring {
             }
         }
 
-        $EmployeeHtmlBody += "<p>Please take action on the above mentioned issues!</p><p>Best regards</p><p>Intune Automation</p>"
-        $EmployeeHtmlMsg = $EmployeeHtmlHeader + $EmployeeHtmlBody
+        If ($hasAlerts) {
+            $EmployeeHtmlBody += "<p>Please take action on the above mentioned issues!</p><p>Best regards</p><p>Intune Automation</p>"
+            $EmployeeHtmlMsg = $EmployeeHtmlHeader + $EmployeeHtmlBody
 
-        $EmployeeMessageBody = @{
-            content = "$($EmployeeHtmlMsg)";
-            ContentType = "html"
+            $EmployeeMessageBody = @{
+                content = "$($EmployeeHtmlMsg)";
+                ContentType = "html"
+            }
+
+            $EmployeeMessage = @{
+                subject = "Alert! Apple Management requires Attention";
+                toRecipients = @($EmployeeEmailRecipient);
+                body = $EmployeeMessageBody;
+                attachments = @($EmployeePfxAttachment)
+            }
+
+            Send-MgUserMail -UserId $SenderMail -Message $EmployeeMessage
         }
-
-        $EmployeeMessage = @{
-            subject = "Alert! Apple Management requires Attention";
-            toRecipients = @($EmployeeEmailRecipient);
-            body = $EmployeeMessageBody;
-            attachments = @($EmployeePfxAttachment)
-        }
-
-        Send-MgUserMail -UserId $SenderMail -Message $EmployeeMessage
     }
 }
 
